@@ -1,0 +1,21 @@
+services:
+    db:
+        image: postgres:15
+        container_name: kalderos
+        restart: always
+        environment:
+            # POSTGRES_DB: kalderos
+            # POSTGRES_HOST: postgres
+            POSTGRES_USER: myuser
+            POSTGRES_PASSWORD: mypassword
+            PGDATA: /var/lib/postgresql/data/kalderos/
+
+        volumes:
+            # - ./pgdata:/var/lib/postgresql/data
+            - ./dataset:/docker-entrypoint-initdb.d
+
+        ports:
+            - 5432:5432
+
+volumes:
+    pgdata:
