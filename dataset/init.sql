@@ -7,12 +7,12 @@ CREATE TABLE pokemon (
     type2 TEXT,
     "order" SMALLINT NULL,
     "weight" SMALLINT NULL,
-    height SMALLINT NULL,
+    height SMALLINT NULL
 );
 
 CREATE TABLE pokemon_types (
     id INTEGER,
     "type" TEXT,
     damage_modifier TEXT,
-    target_types TEXT,
+    target_types TEXT
 );

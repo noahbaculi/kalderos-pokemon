@@ -1,5 +1,5 @@
 from io import StringIO
-import psycopg2
+from sqlalchemy import create_engine
 import typer
 import pandas as pd
 
@@ -37,13 +37,16 @@ def load_table_data(
     df.to_csv(buffer, header=False, index=False)
     buffer.seek(0)
     try:
-        CURSOR.copy_from(buffer, table_name, sep=",", null="")
-        CONNECTION.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
+        raw_connection = CONNECTION.connection
+        cursor = raw_connection.cursor()
+        cursor.copy_from(buffer, table_name, sep=",", null="")
+        raw_connection.commit()
+    except Exception as error:
         print("Error: %s" % error)
-        CONNECTION.rollback()
+        raw_connection.rollback()
 
 
+@app.command()
 def setup():
     load_table_data(
         "./dataset/pokemon.csv",
@@ -58,29 +61,104 @@ def setup():
         categorical_cols=["type", "damage_modifier", "target_types"],
     )
 
-    breakpoint()
 
-    # Execute SQL queries
-    CURSOR.execute("SELECT * FROM pokemon;")
-    print(f"{CURSOR.statusmessage = }")
-    rows = CURSOR.fetchall()
-    for row in rows:
-        print(row)
+@app.command()
+def run1():
+    print('"Which Pokemon can effectively battle the most number of Pokemon with 4x effectiveness?"')
+
+    SQL = """
+    WITH pokemon_effectiveness AS (
+        SELECT
+            type AS attacking_type
+            , target_types AS defending_type
+            , damage_modifier
+            , CASE damage_modifier
+                WHEN 'no_damage_to' THEN 0
+                WHEN 'half_damage_to' THEN 0.5
+                WHEN 'double_damage_to' THEN 2
+            ELSE 1 END AS effectiveness
+        FROM pokemon_types
+    )
+    , combined_effectiveness AS (
+        SELECT
+            pokemon_effectiveness_1.attacking_type
+            , pokemon_effectiveness_1.defending_type AS defending_type_1
+            , pokemon_effectiveness_1.effectiveness AS effectiveness_1
+            , pokemon_effectiveness_2.defending_type AS defending_type_2
+            , pokemon_effectiveness_2.effectiveness AS effectiveness_2
+            , (pokemon_effectiveness_1.effectiveness * pokemon_effectiveness_2.effectiveness) AS combined_effectiveness
+        FROM pokemon_effectiveness AS pokemon_effectiveness_1
+        CROSS JOIN (
+            SELECT * FROM pokemon_effectiveness
+            UNION ALL
+            SELECT NULL , NULL , NULL , 1
+        ) AS pokemon_effectiveness_2
+        WHERE
+            (
+                pokemon_effectiveness_1.attacking_type = pokemon_effectiveness_2.attacking_type
+                OR pokemon_effectiveness_2.attacking_type IS NULL
+            )
+            AND
+            (
+                pokemon_effectiveness_1.defending_type < pokemon_effectiveness_2.defending_type
+                OR pokemon_effectiveness_2.defending_type IS NULL
+            )
+        ORDER BY
+            attacking_type
+            , defending_type_1
+            , defending_type_2
+            , combined_effectiveness
+    )
+    , battles AS (
+        SELECT
+            p_attacking.name AS attacking_name
+            , p_attacking.type1 AS attacking_type1
+            , p_attacking.type2 AS attacking_type2
+            , p_defending.name AS defending_name
+            , p_defending.type1 AS defending_type1
+            , p_defending.type2 AS defending_type2
+            , combined_effectiveness.combined_effectiveness AS attack_effectiveness
+        FROM pokemon AS p_attacking
+        CROSS JOIN pokemon AS p_defending
+        JOIN combined_effectiveness
+            ON (
+                p_attacking.type1 = combined_effectiveness.attacking_type
+                OR p_attacking.type2 = combined_effectiveness.attacking_type
+            )
+            AND (
+                ( p_defending.type1 = combined_effectiveness.defending_type_1
+                AND p_defending.type2 = combined_effectiveness.defending_type_2 )
+                OR 
+                ( p_defending.type2 = combined_effectiveness.defending_type_1
+                AND p_defending.type1 = combined_effectiveness.defending_type_2 )
+            )       
+        WHERE
+            p_attacking.id != p_defending.id
+    )
+    SELECT
+        attacking_name
+        , COUNT(*) AS number_of_effective_battles
+        , AVG(attack_effectiveness) AS average_effectiveness
+    FROM battles
+    WHERE
+        attack_effectiveness = 4
+    GROUP BY
+        attacking_name
+    ORDER BY number_of_effective_battles DESC
+    """
+
+    df = pd.read_sql(SQL, CONNECTION)
+    print(df.head(5))
 
 
-def run():
-    print("Running!")
+def run_all():
+    run1()
 
 
 if __name__ == "__main__":
     # Connect to PostgreSQL
-    with psycopg2.connect(
-        dbname="myuser",
-        user="myuser",
-        password="mypassword",
-        host="localhost",
-        port="5432",
-    ) as CONNECTION:
-        # Create database cursor
-        with CONNECTION.cursor() as CURSOR:
-            app()
+    engine = create_engine("postgresql+psycopg2://myuser:mypassword@localhost/myuser")
+    with engine.connect() as CONNECTION:
+        app()
+
+    engine.dispose()
