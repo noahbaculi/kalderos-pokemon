@@ -152,7 +152,9 @@ def run1():
         combined_effectiveness = 4
     GROUP BY
         attacking_name
-    ORDER BY number_of_effective_battles DESC
+    ORDER BY
+        number_of_effective_battles DESC
+        , attacking_name
     """
 
     df = pd.read_sql(SQL, CONNECTION)
@@ -173,7 +175,9 @@ def run2():
         combined_effectiveness >= 2
     GROUP BY
         attacking_name
-    ORDER BY number_of_effective_battles DESC
+    ORDER BY
+        number_of_effective_battles DESC
+        , attacking_name
     """
 
     df = pd.read_sql(SQL, CONNECTION)
@@ -209,10 +213,49 @@ def run3():
         defending_name
     ORDER BY
         number_of_resistances DESC
+        , defending_name
     """
 
     df = pd.read_sql(SQL, CONNECTION)
-    print(df.head(10).to_markdown(index=False))
+    print(df.head(12).to_markdown(index=False))
+
+
+@app.command()
+def run4():
+    print(
+        "Which Pokemon is not weak to the most number of Pokemon?"
+        " (meaning it does not take 2x or more damage from either attacking Pokemon type)"
+    )
+
+    SQL = f"""
+    WITH {BATTLES_CTE}
+    , not_weak AS (
+        SELECT
+            attacking_name
+            , defending_name
+            , MAX(
+                CASE WHEN combined_effectiveness < 2 THEN 1 ELSE 0 END
+            ) AS not_weak
+        FROM battles
+        GROUP BY
+            attacking_name
+            , defending_name
+    )
+    SELECT
+        defending_name
+        , COUNT(DISTINCT attacking_name) AS number_of_not_weak_battles
+    FROM not_weak
+    GROUP BY
+        defending_name
+    ORDER BY
+        number_of_not_weak_battles DESC
+        , defending_name
+    """
+
+    df = pd.read_sql(SQL, CONNECTION)
+    print(df.head(12).to_markdown(index=False))
+
+    breakpoint()
 
 
 @app.command()
@@ -222,6 +265,8 @@ def run_all():
     run2()
     print()
     run3()
+    print()
+    run4()
     print()
 
 
