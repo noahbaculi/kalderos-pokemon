@@ -193,22 +193,13 @@ def run3():
 
     SQL = f"""
     WITH {BATTLES_CTE}
-    , resistances AS (
-        SELECT
-            attacking_name
-            , defending_name
-            , MAX(
-                CASE WHEN (effectiveness_1 < 1) OR (effectiveness_2 < 1) THEN 1 ELSE 0 END
-            ) AS resistance
-        FROM battles
-        GROUP BY
-            attacking_name
-            , defending_name
-    )
     SELECT
         defending_name
         , COUNT(DISTINCT attacking_name) AS number_of_resistances
-    FROM resistances
+    FROM battles
+    WHERE
+        effectiveness_1 < 1
+        OR effectiveness_2 < 1
     GROUP BY
         defending_name
     ORDER BY
