@@ -30,6 +30,10 @@ python kalderos.py setup
 ```
 
 ```shell
-# Run queries and analysis
-python kalderos.py run
+# Run queries and analysis for all questions
+python kalderos.py run-all
+
+
+# Run individual question queries and analysis
+python kalderos.py run1
 ```

@@ -112,11 +112,12 @@ def run1():
     , battles AS (
         SELECT
             p_attacking.name AS attacking_name
-            , p_attacking.type1 AS attacking_type1
-            , p_attacking.type2 AS attacking_type2
+            , p_attacking.type1 AS attacking_type_1
+            , p_attacking.type2 AS attacking_type_2
             , p_defending.name AS defending_name
-            , p_defending.type1 AS defending_type1
-            , p_defending.type2 AS defending_type2
+            , p_defending.type1 AS defending_type_1
+            , p_defending.type2 AS defending_type_2
+            , combined_effectiveness.*
             , combined_effectiveness.combined_effectiveness AS attack_effectiveness
         FROM pokemon AS p_attacking
         CROSS JOIN pokemon AS p_defending
@@ -125,15 +126,18 @@ def run1():
                 p_attacking.type1 = combined_effectiveness.attacking_type
                 OR p_attacking.type2 = combined_effectiveness.attacking_type
             )
+            AND p_defending.type1 = combined_effectiveness.defending_type_1
             AND (
-                ( p_defending.type1 = combined_effectiveness.defending_type_1
-                AND p_defending.type2 = combined_effectiveness.defending_type_2 )
-                OR 
-                ( p_defending.type2 = combined_effectiveness.defending_type_1
-                AND p_defending.type1 = combined_effectiveness.defending_type_2 )
-            )       
+                ( p_defending.type2 IS NULL AND combined_effectiveness.defending_type_2 IS NULL )
+                OR p_defending.type2 = combined_effectiveness.defending_type_2
+            )
         WHERE
             p_attacking.id != p_defending.id
+            
+        ORDER BY
+            p_attacking.name
+            , p_defending.name
+            , attack_effectiveness
     )
     SELECT
         attacking_name
@@ -148,10 +152,109 @@ def run1():
 
     df = pd.read_sql(SQL, CONNECTION)
     print(df.head(5))
+    breakpoint()
 
 
+@app.command()
+def run2():
+    print('"Which Pokemon can effectively battle the most number of Pokemon with at least 2x effectiveness?"')
+
+    SQL = """
+    WITH pokemon_effectiveness AS (
+        SELECT
+            type AS attacking_type
+            , target_types AS defending_type
+            , damage_modifier
+            , CASE damage_modifier
+                WHEN 'no_damage_to' THEN 0
+                WHEN 'half_damage_to' THEN 0.5
+                WHEN 'double_damage_to' THEN 2
+            ELSE 1 END AS effectiveness
+        FROM pokemon_types
+    )
+    , combined_effectiveness AS (
+        SELECT
+            pokemon_effectiveness_1.attacking_type
+            , pokemon_effectiveness_1.defending_type AS defending_type_1
+            , pokemon_effectiveness_1.effectiveness AS effectiveness_1
+            , pokemon_effectiveness_2.defending_type AS defending_type_2
+            , pokemon_effectiveness_2.effectiveness AS effectiveness_2
+            , (pokemon_effectiveness_1.effectiveness * pokemon_effectiveness_2.effectiveness) AS combined_effectiveness
+        FROM pokemon_effectiveness AS pokemon_effectiveness_1
+        CROSS JOIN (
+            SELECT * FROM pokemon_effectiveness
+            UNION ALL
+            SELECT NULL , NULL , NULL , 1
+        ) AS pokemon_effectiveness_2
+        WHERE
+            (
+                pokemon_effectiveness_1.attacking_type = pokemon_effectiveness_2.attacking_type
+                OR pokemon_effectiveness_2.attacking_type IS NULL
+            )
+            AND
+            (
+                pokemon_effectiveness_1.defending_type < pokemon_effectiveness_2.defending_type
+                OR pokemon_effectiveness_2.defending_type IS NULL
+            )
+        ORDER BY
+            attacking_type
+            , defending_type_1
+            , defending_type_2
+            , combined_effectiveness
+    )
+    , battles AS (
+        SELECT
+            p_attacking.name AS attacking_name
+            , p_attacking.type1 AS attacking_type_1
+            , p_attacking.type2 AS attacking_type_2
+            , p_defending.name AS defending_name
+            , p_defending.type1 AS defending_type_1
+            , p_defending.type2 AS defending_type_2
+            , combined_effectiveness.*
+            , combined_effectiveness.combined_effectiveness AS attack_effectiveness
+        FROM pokemon AS p_attacking
+        CROSS JOIN pokemon AS p_defending
+        JOIN combined_effectiveness
+            ON (
+                p_attacking.type1 = combined_effectiveness.attacking_type
+                OR p_attacking.type2 = combined_effectiveness.attacking_type
+            )
+            AND p_defending.type1 = combined_effectiveness.defending_type_1
+            AND (
+                ( p_defending.type2 IS NULL AND combined_effectiveness.defending_type_2 IS NULL )
+                OR p_defending.type2 = combined_effectiveness.defending_type_2
+            )
+        WHERE
+            p_attacking.id != p_defending.id
+            
+        ORDER BY
+            p_attacking.name
+            , p_defending.name
+            , attack_effectiveness
+    )
+    SELECT
+        attacking_name
+        , COUNT(DISTINCT defending_name) AS number_of_effective_battles
+    FROM battles
+    WHERE
+        attack_effectiveness >= 2
+    GROUP BY
+        attacking_name
+    ORDER BY number_of_effective_battles DESC
+    """
+
+    df = pd.read_sql(SQL, CONNECTION)
+    print(df.head(5))
+
+    breakpoint()
+
+
+@app.command()
 def run_all():
     run1()
+    print()
+    run2()
+    print()
 
 
 if __name__ == "__main__":
