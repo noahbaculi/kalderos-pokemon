@@ -117,7 +117,9 @@ def run1():
             , p_defending.name AS defending_name
             , p_defending.type1 AS defending_type_1
             , p_defending.type2 AS defending_type_2
-            , combined_effectiveness.combined_effectiveness AS attack_effectiveness
+            , combined_effectiveness.effectiveness_1
+            , combined_effectiveness.effectiveness_2
+            , combined_effectiveness.combined_effectiveness
         FROM pokemon AS p_attacking
         CROSS JOIN pokemon AS p_defending
         JOIN combined_effectiveness
@@ -136,21 +138,21 @@ def run1():
         ORDER BY
             p_attacking.name
             , p_defending.name
-            , attack_effectiveness
+            , combined_effectiveness.combined_effectiveness
     )
     SELECT
         attacking_name
         , COUNT(DISTINCT defending_name) AS number_of_effective_battles
     FROM battles
     WHERE
-        attack_effectiveness = 4
+        combined_effectiveness = 4
     GROUP BY
         attacking_name
     ORDER BY number_of_effective_battles DESC
     """
 
     df = pd.read_sql(SQL, CONNECTION)
-    print(df.head(5))
+    print(df.head(5).to_markdown(index=False))
 
 
 @app.command()
@@ -208,7 +210,9 @@ def run2():
             , p_defending.name AS defending_name
             , p_defending.type1 AS defending_type_1
             , p_defending.type2 AS defending_type_2
-            , combined_effectiveness.combined_effectiveness AS attack_effectiveness
+            , combined_effectiveness.effectiveness_1
+            , combined_effectiveness.effectiveness_2
+            , combined_effectiveness.combined_effectiveness
         FROM pokemon AS p_attacking
         CROSS JOIN pokemon AS p_defending
         JOIN combined_effectiveness
@@ -227,21 +231,21 @@ def run2():
         ORDER BY
             p_attacking.name
             , p_defending.name
-            , attack_effectiveness
+            , combined_effectiveness.combined_effectiveness
     )
     SELECT
         attacking_name
         , COUNT(DISTINCT defending_name) AS number_of_effective_battles
     FROM battles
     WHERE
-        attack_effectiveness >= 2
+        combined_effectiveness >= 2
     GROUP BY
         attacking_name
     ORDER BY number_of_effective_battles DESC
     """
 
     df = pd.read_sql(SQL, CONNECTION)
-    print(df.head(5))
+    print(df.head(5).to_markdown(index=False))
 
 
 @app.command()
@@ -348,7 +352,7 @@ def run3():
     """
 
     df = pd.read_sql(SQL, CONNECTION)
-    print(df.head(5))
+    print(df.head(10).to_markdown(index=False))
 
 
 @app.command()
