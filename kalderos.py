@@ -250,6 +250,37 @@ def run_q4():
 def run_q5():
     print("Which Pokemon type has the highest typical weight?")
 
+    SQL = """
+    WITH pokemon_type_weight AS (
+        SELECT
+            name
+            , type1 AS type
+            , weight
+        FROM pokemon
+        UNION ALL
+        SELECT
+            name
+            , type2 AS type
+            , weight
+        FROM pokemon
+        WHERE type2 IS NOT NULL
+    )
+    SELECT
+        type
+        , AVG(weight) AS average_weight
+    FROM pokemon_type_weight
+    WHERE
+        weight IS NOT NULL
+    GROUP BY
+        type
+    ORDER BY
+        average_weight DESC
+    """
+
+    df = pd.read_sql(SQL, CONNECTION)
+    print(df.head(5).to_markdown(index=False))
+    breakpoint()
+
 
 @app.command()
 def run_all():
