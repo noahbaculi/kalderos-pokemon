@@ -137,8 +137,7 @@ def run1():
     )
     SELECT
         attacking_name
-        , COUNT(*) AS number_of_effective_battles
-        , AVG(attack_effectiveness) AS average_effectiveness
+        , COUNT(DISTINCT defending_name) AS number_of_effective_battles
     FROM battles
     WHERE
         attack_effectiveness = 4
