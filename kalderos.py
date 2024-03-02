@@ -220,22 +220,21 @@ def run4():
 
     SQL = f"""
     WITH {BATTLES_CTE}
-    , not_weak AS (
+    , lowest_effectiveness AS (
         SELECT
             attacking_name
             , defending_name
-            , MAX(
-                CASE WHEN combined_effectiveness < 2 THEN 1 ELSE 0 END
-            ) AS not_weak
+            , MAX(combined_effectiveness) AS lowest_effectiveness
         FROM battles
         GROUP BY
             attacking_name
             , defending_name
+        HAVING MAX(combined_effectiveness) < 2
     )
     SELECT
         defending_name
-        , COUNT(DISTINCT attacking_name) AS number_of_not_weak_battles
-    FROM not_weak
+        , count(DISTINCT attacking_name) AS number_of_not_weak_battles
+    FROM lowest_effectiveness
     GROUP BY
         defending_name
     ORDER BY
