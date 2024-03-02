@@ -139,7 +139,7 @@ pokemon_effectiveness AS (
 
 
 @app.command()
-def run1():
+def run_q1():
     print('"Which Pokemon can effectively battle the most number of Pokemon with 4x effectiveness?"')
 
     SQL = f"""
@@ -162,7 +162,7 @@ def run1():
 
 
 @app.command()
-def run2():
+def run_q2():
     print('"Which Pokemon can effectively battle the most number of Pokemon with at least 2x effectiveness?"')
 
     SQL = f"""
@@ -185,7 +185,7 @@ def run2():
 
 
 @app.command()
-def run3():
+def run_q3():
     print(
         "Which Pokemon can resist the most number of attacking Pokemon?"
         " (meaning it can resist at least 1 of the types of attacking Pokemon?)"
@@ -212,7 +212,7 @@ def run3():
 
 
 @app.command()
-def run4():
+def run_q4():
     print(
         "Which Pokemon is not weak to the most number of Pokemon?"
         " (meaning it does not take 2x or more damage from either attacking Pokemon type)"
@@ -245,18 +245,23 @@ def run4():
     df = pd.read_sql(SQL, CONNECTION)
     print(df.head(12).to_markdown(index=False))
 
-    breakpoint()
+
+@app.command()
+def run_q5():
+    print("Which Pokemon type has the highest typical weight?")
 
 
 @app.command()
 def run_all():
-    run1()
+    run_q1()
     print()
-    run2()
+    run_q2()
     print()
-    run3()
+    run_q3()
     print()
-    run4()
+    run_q4()
+    print()
+    run_q5()
     print()
 
 

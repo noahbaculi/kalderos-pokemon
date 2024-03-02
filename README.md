@@ -34,6 +34,6 @@ python kalderos.py setup
 python kalderos.py run-all
 
 
-# Run individual question queries and analysis
-python kalderos.py run1
+# Run the query and analysis for an individual question
+python kalderos.py run-q1
 ```
