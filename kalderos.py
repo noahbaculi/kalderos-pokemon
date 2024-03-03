@@ -1,7 +1,10 @@
 from io import StringIO
-from sqlalchemy import create_engine
-import typer
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import typer
+from sqlalchemy import create_engine
 
 app = typer.Typer()
 
@@ -283,6 +286,31 @@ def run_q5():
 
 
 @app.command()
+def run_q6():
+    print("Is there a trend in Pokemon height against their ID number?")
+
+    SQL = """
+    SELECT
+        id
+        , height
+    FROM pokemon
+    WHERE height IS NOT NULL
+    """
+
+    df = pd.read_sql(SQL, CONNECTION)
+
+    trendline = np.polyfit(x=df.id, y=df.height, deg=1)
+    print(
+        f"Trendline: y = {trendline[0]:.2f} x + {trendline[1]:.2f}"
+        " => There does not seem to be a trend in Pokemon height against their ID number"
+    )
+
+    df.plot.scatter(x="id", y="height")
+    plt.title("Pokemon ID vs Height")
+    plt.show()
+
+
+@app.command()
 def run_all():
     run_q1()
     print()
@@ -294,6 +322,7 @@ def run_all():
     print()
     run_q5()
     print()
+    run_q6()
 
 
 if __name__ == "__main__":
