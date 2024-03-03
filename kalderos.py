@@ -282,7 +282,6 @@ def run_q5():
 
     df = pd.read_sql(SQL, CONNECTION)
     print(df.head(5).to_markdown(index=False))
-    breakpoint()
 
 
 @app.command()
