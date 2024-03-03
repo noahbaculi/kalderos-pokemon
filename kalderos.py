@@ -6,6 +6,7 @@ import pandas as pd
 import typer
 from sqlalchemy import create_engine
 
+# Define Typer CLI app
 app = typer.Typer()
 
 
@@ -16,6 +17,10 @@ def load_table_data(
     int16_cols: list[str] = [],
     categorical_cols: list[str] = [],
 ) -> None:
+    """
+    Load data from a CSV file into a PostgreSQL table.
+    Coerces columns to the appropriate types and fills with null values when coercion fails.
+    """
     print(f"Loading table data for {table_name}...")
 
     df = pd.read_csv(csv_path)
@@ -51,6 +56,9 @@ def load_table_data(
 
 @app.command()
 def setup():
+    """
+    Load data from the source CSV files into PostgreSQL database
+    """
     load_table_data(
         "./dataset/pokemon.csv",
         table_name="pokemon",
@@ -65,13 +73,14 @@ def setup():
     )
 
 
-BATTLES_CTE = """
+# Define common table expressions for the queries for questions 1-4
+MATCH_UPS_CTE = """
 pokemon_effectiveness AS (
     SELECT
         type AS attacking_type
         , target_types AS defending_type
         , damage_modifier
-        , CASE damage_modifier
+        , CASE damage_modifier  -- Convert damage_modifier to a numeric value for easier calculations
             WHEN 'no_damage_to' THEN 0
             WHEN 'half_damage_to' THEN 0.5
             WHEN 'double_damage_to' THEN 2
@@ -90,7 +99,7 @@ pokemon_effectiveness AS (
     CROSS JOIN (
         SELECT * FROM pokemon_effectiveness
         UNION ALL
-        SELECT NULL , NULL , NULL , 1
+        SELECT NULL , NULL , NULL , 1  -- Add a row for NULL defending_type (with effectiveness = 1)
     ) AS pokemon_effectiveness_2
     WHERE
         (
@@ -108,7 +117,7 @@ pokemon_effectiveness AS (
         , defending_type_2
         , combined_effectiveness
 )
-, battles AS (
+, match_ups AS (
     SELECT
         p_attacking.name AS attacking_name
         , p_attacking.type1 AS attacking_type_1
@@ -128,6 +137,7 @@ pokemon_effectiveness AS (
         )
         AND p_defending.type1 = combined_effectiveness.defending_type_1
         AND (
+            -- Assuming that if a Pokemon has one type, it is populated in type1, with type2 as NULL
             ( p_defending.type2 IS NULL AND combined_effectiveness.defending_type_2 IS NULL )
             OR p_defending.type2 = combined_effectiveness.defending_type_2
         )
@@ -146,17 +156,17 @@ def run_q1():
     print('"Which Pokemon can effectively battle the most number of Pokemon with 4x effectiveness?"')
 
     SQL = f"""
-    WITH {BATTLES_CTE}
+    WITH {MATCH_UPS_CTE}
     SELECT
         attacking_name
-        , COUNT(DISTINCT defending_name) AS number_of_effective_battles
-    FROM battles
+        , COUNT(DISTINCT defending_name) AS number_of_effective_match_ups
+    FROM match_ups
     WHERE
         combined_effectiveness = 4
     GROUP BY
         attacking_name
     ORDER BY
-        number_of_effective_battles DESC
+        number_of_effective_match_ups DESC
         , attacking_name
     """
 
@@ -169,17 +179,17 @@ def run_q2():
     print('"Which Pokemon can effectively battle the most number of Pokemon with at least 2x effectiveness?"')
 
     SQL = f"""
-    WITH {BATTLES_CTE}
+    WITH {MATCH_UPS_CTE}
     SELECT
         attacking_name
-        , COUNT(DISTINCT defending_name) AS number_of_effective_battles
-    FROM battles
+        , COUNT(DISTINCT defending_name) AS number_of_effective_match_ups
+    FROM match_ups
     WHERE
         combined_effectiveness >= 2
     GROUP BY
         attacking_name
     ORDER BY
-        number_of_effective_battles DESC
+        number_of_effective_match_ups DESC
         , attacking_name
     """
 
@@ -195,11 +205,11 @@ def run_q3():
     )
 
     SQL = f"""
-    WITH {BATTLES_CTE}
+    WITH {MATCH_UPS_CTE}
     SELECT
         defending_name
         , COUNT(DISTINCT attacking_name) AS number_of_resistances
-    FROM battles
+    FROM match_ups
     WHERE
         effectiveness_1 < 1
         OR effectiveness_2 < 1
@@ -222,13 +232,13 @@ def run_q4():
     )
 
     SQL = f"""
-    WITH {BATTLES_CTE}
+    WITH {MATCH_UPS_CTE}
     , lowest_effectiveness AS (
         SELECT
             attacking_name
             , defending_name
             , MAX(combined_effectiveness) AS lowest_effectiveness
-        FROM battles
+        FROM match_ups
         GROUP BY
             attacking_name
             , defending_name
@@ -236,12 +246,12 @@ def run_q4():
     )
     SELECT
         defending_name
-        , count(DISTINCT attacking_name) AS number_of_not_weak_battles
+        , count(DISTINCT attacking_name) AS number_of_not_weak_match_ups
     FROM lowest_effectiveness
     GROUP BY
         defending_name
     ORDER BY
-        number_of_not_weak_battles DESC
+        number_of_not_weak_match_ups DESC
         , defending_name
     """
 
@@ -311,6 +321,9 @@ def run_q6():
 
 @app.command()
 def run_all():
+    """
+    Run queries for all questions
+    """
     run_q1()
     print()
     run_q2()
