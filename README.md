@@ -2,11 +2,45 @@
 
 ## Intro
 
-Hi there, I'm Noah! Thank you for your consideration in part of the Kalderos Pokemon challenge! I hope you enjoy my mini Pokemon analysis! If you'd like to see more, feel free to explore any of my other (publicly available) projects:
+Hi there, I'm Noah! Thank you for your consideration and putting together the Kalderos Pokemon challenge! I hope you enjoy my mini Pokemon analysis! If you'd like to see more, feel free to explore any of my other (publicly available) projects:
 
 - 🎸 [Guitar Tab Generator](https://github.com/noahbaculi) ([Demo](https://noahbaculi.com/guitartab))
 - 📁 [Busca: Closest file match finder CLI app](https://github.com/noahbaculi/busca)
 - More at [noahbaculi.com](https://noahbaculi.com/portfolio)
+
+## Instructions
+
+### Prerequisites
+
+- [Docker CLI](https://docs.docker.com/get-docker/)
+- [Python 3](https://www.python.org/downloads/)
+
+### Commands
+
+```shell
+# Create Python virtual environment
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+```shell
+# Create docker container for database
+docker compose up -d
+```
+
+```shell
+# Load data from `.csv` files into database
+python kalderos.py setup
+```
+
+```shell
+# Run queries and analysis for all questions
+python kalderos.py run-all
+
+# Run the query and analysis for an individual question
+python kalderos.py run-q1
+```
 
 ## Answers
 
@@ -64,32 +98,5 @@ Hi there, I'm Noah! Thank you for your consideration in part of the Kalderos Pok
 6 - Is there a trend in Pokemon height against their ID number?
 
 The trendline is `y = 0.00 x + 10.47` so there does not seem to be a trend in Pokemon height against their ID number.
-
-## Instructions
-
-```shell
-# Create Python virtual environment
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-```shell
-# Create docker container for database
-docker compose up -d
-```
-
-```shell
-# Load data from `.csv` files into database
-python kalderos.py setup
-```
-
-```shell
-# Run queries and analysis for all questions
-python kalderos.py run-all
-
-# Run the query and analysis for an individual question
-python kalderos.py run-q1
-```
 
 ## Thank you
