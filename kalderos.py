@@ -153,7 +153,7 @@ pokemon_effectiveness AS (
 
 @app.command()
 def run_q1():
-    print('"Which Pokemon can effectively battle the most number of Pokemon with 4x effectiveness?"')
+    print("Which Pokemon can effectively battle the most number of Pokemon with 4x effectiveness?")
 
     SQL = f"""
     WITH {MATCH_UPS_CTE}
@@ -176,7 +176,7 @@ def run_q1():
 
 @app.command()
 def run_q2():
-    print('"Which Pokemon can effectively battle the most number of Pokemon with at least 2x effectiveness?"')
+    print("Which Pokemon can effectively battle the most number of Pokemon with at least 2x effectiveness?")
 
     SQL = f"""
     WITH {MATCH_UPS_CTE}
